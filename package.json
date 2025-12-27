@@ -1,7 +1,7 @@
 {
   "name": "harshuu2-backend",
   "version": "1.0.0",
-  "description": "HARSHUU 2.0 – Production-grade food delivery backend (Node.js, Express, MongoDB)",
+  "description": "HARSHUU 2.0 – Production-grade food delivery backend built with Node.js, Express, and MongoDB",
   "main": "src/server.js",
   "type": "module",
   "scripts": {
@@ -22,6 +22,7 @@
     "express": "^4.19.2",
     "express-rate-limit": "^7.4.0",
     "express-validator": "^7.1.0",
+    "helmet": "^7.1.0",
     "jsonwebtoken": "^9.0.2",
     "mongoose": "^8.6.1",
     "morgan": "^1.10.0",

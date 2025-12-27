@@ -9,7 +9,7 @@
  * - Restaurant & customer linkage
  */
 
-const mongoose = require("mongoose");
+import mongoose from "mongoose";
 const {
   ORDER_STATUS,
   GST_PERCENTAGE,

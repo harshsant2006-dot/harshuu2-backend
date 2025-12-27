@@ -1,20 +1,21 @@
 /**
  * HARSHUU 2.0 – Server Entry Point
  * --------------------------------
- * This file is responsible for:
- * - Bootstrapping the Express app
- * - Starting the HTTP server
- * - Handling process-level failures
- * - Graceful shutdown (production safe)
- *
- * REAL STARTUP READY CODE
+ * Production-grade server bootstrap
+ * - Express app start
+ * - Env validation
+ * - Graceful shutdown
+ * - Crash safety
  */
 
-require("dotenv").config();
+import dotenv from "dotenv";
+import http from "http";
 
-const http = require("http");
-const app = require("./app");
-const logger = require("./utils/logger.util");
+import app from "./app.js";
+import logger from "./utils/logger.util.js";
+
+// Load env
+dotenv.config();
 
 // ===============================
 // ENV VALIDATION (FAIL FAST)
@@ -35,7 +36,7 @@ REQUIRED_ENV.forEach((key) => {
 // ===============================
 // SERVER CONFIG
 // ===============================
-const PORT = process.env.PORT || 5000;
+const PORT = Number(process.env.PORT) || 5000;
 const server = http.createServer(app);
 
 // ===============================
@@ -54,12 +55,10 @@ const shutdown = (signal) => {
 
   server.close(() => {
     logger.info("✅ HTTP server closed");
-
-    // Close DB connections if needed (mongoose handles internally)
     process.exit(0);
   });
 
-  // Force shutdown if stuck
+  // Force shutdown safeguard
   setTimeout(() => {
     logger.error("❌ Force shutdown due to timeout");
     process.exit(1);

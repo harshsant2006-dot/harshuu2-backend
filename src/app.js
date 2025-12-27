@@ -1,35 +1,32 @@
 /**
  * HARSHUU 2.0 – Express App Configuration
  * --------------------------------------
- * This file wires:
- * - Core middlewares
- * - Security
- * - Logging
- * - API routes
- * - Global error handling
- *
- * NO DEMO LOGIC
- * NO PLACEHOLDERS
+ * Production-grade Express app setup
+ * NO demo logic
+ * NO placeholders
  */
 
-require("dotenv").config();
+import dotenv from "dotenv";
+import express from "express";
+import cors from "cors";
+import helmet from "helmet";
+import morgan from "morgan";
 
-const express = require("express");
-const cors = require("cors");
-const helmet = require("helmet");
-const morgan = require("morgan");
+// Load env variables
+dotenv.config();
 
-const connectDB = require("./config/db");
-const logger = require("./utils/logger.util");
-const errorHandler = require("./middlewares/error.middleware");
+// Internal imports (IMPORTANT: .js extension mandatory)
+import connectDB from "./config/db.js";
+import logger from "./utils/logger.util.js";
+import errorHandler from "./middlewares/error.middleware.js";
 
 // Routes
-const adminRoutes = require("./routes/admin.routes");
-const publicRoutes = require("./routes/public.routes");
-const restaurantRoutes = require("./routes/restaurant.routes");
-const dishRoutes = require("./routes/dish.routes");
-const orderRoutes = require("./routes/order.routes");
-const settingsRoutes = require("./routes/setting.routes");
+import adminRoutes from "./routes/admin.routes.js";
+import publicRoutes from "./routes/public.routes.js";
+import restaurantRoutes from "./routes/restaurant.routes.js";
+import dishRoutes from "./routes/dish.routes.js";
+import orderRoutes from "./routes/order.routes.js";
+import settingsRoutes from "./routes/setting.routes.js";
 
 // ===============================
 // INIT APP
@@ -48,7 +45,7 @@ connectDB();
 // Security headers
 app.use(helmet());
 
-// Enable CORS (frontend + admin panel)
+// Enable CORS
 app.use(
   cors({
     origin: process.env.CORS_ORIGIN || "*",
@@ -61,7 +58,7 @@ app.use(
 app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ extended: true }));
 
-// HTTP request logging (production safe)
+// HTTP request logging
 app.use(morgan("combined", { stream: logger.stream }));
 
 // ===============================
@@ -79,28 +76,17 @@ app.get("/health", (req, res) => {
 // API ROUTES
 // ===============================
 
-// Admin (dashboard side)
 app.use("/api/admin", adminRoutes);
-
-// Public APIs (customer side)
 app.use("/api", publicRoutes);
-
-// Restaurant management
 app.use("/api/restaurants", restaurantRoutes);
-
-// Dish management
 app.use("/api/dishes", dishRoutes);
-
-// Orders + billing
 app.use("/api/orders", orderRoutes);
-
-// QR + charges + platform settings
 app.use("/api/settings", settingsRoutes);
 
 // ===============================
 // 404 HANDLER
 // ===============================
-app.use((req, res, next) => {
+app.use((req, res) => {
   res.status(404).json({
     success: false,
     message: "API route not found"
@@ -115,4 +101,4 @@ app.use(errorHandler);
 // ===============================
 // EXPORT APP
 // ===============================
-module.exports = app;
+export default app;

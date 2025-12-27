@@ -5,7 +5,7 @@
  * Represents a single menu item belonging to a restaurant.
  */
 
-const mongoose = require("mongoose");
+import mongoose from "mongoose";
 const { DISH_TYPE } = require("../config/constants");
 
 const dishSchema = new mongoose.Schema(

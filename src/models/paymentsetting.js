@@ -13,7 +13,7 @@
  * (Only one active settings document in DB)
  */
 
-const mongoose = require("mongoose");
+import mongoose from "mongoose";
 
 const paymentSettingsSchema = new mongoose.Schema(
   {

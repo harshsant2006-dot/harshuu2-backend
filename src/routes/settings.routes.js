@@ -4,7 +4,7 @@
  * Used by Admin Panel + Customer Order Page
  */
 
-const express = require("express");
+import express from "express";
 const router = express.Router();
 
 const PaymentSettings = require("../models/paymentsettings");

@@ -9,7 +9,7 @@
  * - Fetch dishes by restaurant
  */
 
-const express = require("express");
+import express from "express";
 const router = express.Router();
 
 const Dish = require("../models/dish");

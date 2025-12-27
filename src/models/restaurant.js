@@ -5,7 +5,7 @@
  * Represents a food restaurant/hotel on the platform.
  */
 
-const mongoose = require("mongoose");
+import mongoose from "mongoose";
 const { RESTAURANT_STATUS } = require("../config/constants");
 
 const restaurantSchema = new mongoose.Schema(

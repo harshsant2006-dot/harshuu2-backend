@@ -10,6 +10,10 @@ import CONSTANTS from "../config/constant.js";
 
 const { DISH_TYPE } = CONSTANTS;
 
+if (!DISH_TYPE) {
+  throw new Error("DISH_TYPE is missing in constants");
+}
+
 const dishSchema = new mongoose.Schema(
   {
     restaurant: {
@@ -94,4 +98,4 @@ dishSchema.methods.canBeOrdered = function () {
 
 const Dish = mongoose.model("Dish", dishSchema);
 
-export default Dish;   // ⭐ MOST IMPORTANT
+export default Dish;

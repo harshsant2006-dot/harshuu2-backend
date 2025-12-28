@@ -5,17 +5,13 @@
  */
 
 import express from "express";
+import PaymentSettings from "../models/paymentsettings.js";
+
 const router = express.Router();
 
-const PaymentSettings = require("../models/paymentsettings");
-
 /* ======================================================
-   GET SETTINGS (PUBLIC – FOR CUSTOMER ORDER PAGE)
+   GET SETTINGS (PUBLIC – CUSTOMER ORDER PAGE)
 ====================================================== */
-/**
- * @route   GET /settings
- * @desc    Fetch active payment & billing settings
- */
 router.get("/", async (req, res) => {
   try {
     const settings = await PaymentSettings.findOne({ isActive: true });
@@ -30,11 +26,11 @@ router.get("/", async (req, res) => {
     res.json({
       success: true,
       data: {
-        qrImage: settings.qrImage,
+        upiQrImage: settings.upiQrImage,
         platformFee: settings.platformFee,
         handlingCharge: settings.handlingCharge,
         deliveryFeePerKm: settings.deliveryFeePerKm,
-        gstPercent: settings.gstPercent
+        gstPercentage: settings.gstPercentage
       }
     });
   } catch (error) {
@@ -46,27 +42,22 @@ router.get("/", async (req, res) => {
 /* ======================================================
    CREATE / UPDATE SETTINGS (ADMIN)
 ====================================================== */
-/**
- * @route   POST /settings
- * @desc    Create or update payment settings
- * NOTE     Only one active settings document allowed
- */
 router.post("/", async (req, res) => {
   try {
     const {
-      qrImage,
+      upiQrImage,
       platformFee,
       handlingCharge,
       deliveryFeePerKm,
-      gstPercent
+      gstPercentage
     } = req.body;
 
     if (
-      !qrImage ||
+      !upiQrImage ||
       platformFee == null ||
       handlingCharge == null ||
       deliveryFeePerKm == null ||
-      gstPercent == null
+      gstPercentage == null
     ) {
       return res.status(400).json({
         success: false,
@@ -74,7 +65,7 @@ router.post("/", async (req, res) => {
       });
     }
 
-    // Disable old settings
+    // Disable old active settings
     await PaymentSettings.updateMany(
       { isActive: true },
       { isActive: false }
@@ -82,11 +73,11 @@ router.post("/", async (req, res) => {
 
     // Create new active settings
     const settings = await PaymentSettings.create({
-      qrImage,
+      upiQrImage,
       platformFee,
       handlingCharge,
       deliveryFeePerKm,
-      gstPercent,
+      gstPercentage,
       isActive: true
     });
 
@@ -101,4 +92,4 @@ router.post("/", async (req, res) => {
   }
 });
 
-module.exports = router;
+export default router;   // ⭐ ONLY export, ONLY at end

@@ -2,8 +2,6 @@
  * HARSHUU 2.0 – Express App Configuration
  * --------------------------------------
  * Production-grade Express app setup
- * NO demo logic
- * NO placeholders
  */
 
 import dotenv from "dotenv";
@@ -15,18 +13,18 @@ import morgan from "morgan";
 // Load env variables
 dotenv.config();
 
-// Internal imports (IMPORTANT: .js extension mandatory)
+// Internal imports
 import connectDB from "./config/db.js";
 import logger from "./utils/logger.util.js";
 import errorHandler from "./middlewares/error.middleware.js";
 
 // Routes
 import adminRoutes from "./routes/admin.routes.js";
-import publicRoutes from "./routes/public.routes.js";
 import restaurantRoutes from "./routes/restaurant.routes.js";
 import dishRoutes from "./routes/dish.routes.js";
 import orderRoutes from "./routes/order.routes.js";
 import settingsRoutes from "./routes/setting.routes.js";
+import publicRoutes from "./routes/public.routes.js";
 
 // ===============================
 // INIT APP
@@ -73,15 +71,17 @@ app.get("/health", (req, res) => {
 });
 
 // ===============================
-// API ROUTES
+// API ROUTES (ORDER IS IMPORTANT)
 // ===============================
 
 app.use("/api/admin", adminRoutes);
-app.use("/api", publicRoutes);
 app.use("/api/restaurants", restaurantRoutes);
 app.use("/api/dishes", dishRoutes);
 app.use("/api/orders", orderRoutes);
 app.use("/api/settings", settingsRoutes);
+
+// ⚠️ ALWAYS LAST – generic routes
+app.use("/api", publicRoutes);
 
 // ===============================
 // 404 HANDLER

@@ -10,13 +10,19 @@
  */
 
 import mongoose from "mongoose";
+import CONSTANTS from "../config/constant.js";
+
 const {
   ORDER_STATUS,
-  GST_PERCENTAGE,
+  BILLING_DEFAULTS
+} = CONSTANTS;
+
+const {
+  GST_PERCENT,
   PLATFORM_FEE,
   HANDLING_CHARGE,
-  DELIVERY_FEE_PER_KM
-} = require("../config/constants");
+  DELIVERY_PER_KM
+} = BILLING_DEFAULTS;
 
 /* =========================
    ORDER ITEM (SUB-DOCUMENT)
@@ -146,11 +152,11 @@ orderSchema.statics.calculateBill = function ({
   );
 
   const gstAmount = Number(
-    ((foodTotal * GST_PERCENTAGE) / 100).toFixed(2)
+    ((foodTotal * GST_PERCENT) / 100).toFixed(2)
   );
 
   const deliveryCharge = Number(
-    (distanceKm * DELIVERY_FEE_PER_KM).toFixed(2)
+    (distanceKm * DELIVERY_PER_KM).toFixed(2)
   );
 
   const grandTotal =
@@ -175,8 +181,8 @@ orderSchema.statics.calculateBill = function ({
 ========================= */
 orderSchema.methods.canTransitionTo = function (nextStatus) {
   const allowedTransitions = {
-    CREATED: ["CONFIRMED", "CANCELLED"],
-    CONFIRMED: ["PREPARING", "CANCELLED"],
+    CREATED: ["ACCEPTED", "CANCELLED"],
+    ACCEPTED: ["PREPARING", "CANCELLED"],
     PREPARING: ["OUT_FOR_DELIVERY"],
     OUT_FOR_DELIVERY: ["DELIVERED"],
     DELIVERED: [],
@@ -186,4 +192,6 @@ orderSchema.methods.canTransitionTo = function (nextStatus) {
   return allowedTransitions[this.status]?.includes(nextStatus);
 };
 
-module.exports = mongoose.model("Order", orderSchema);
+const Order = mongoose.model("Order", orderSchema);
+
+export default Order;   // ⭐ MOST IMPORTANT

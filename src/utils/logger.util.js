@@ -1,14 +1,12 @@
 /**
  * HARSHUU 2.0 – Logger Utility
  * ----------------------------
- * Purpose:
- * - Centralized application logging
- * - Different log levels (info, warn, error)
- * - Production safe (no console spam)
- * - Ready for cloud logging (Datadog / ELK / CloudWatch)
+ * Centralized logging with Winston
+ * ES Module compatible
+ * Production ready (Render / Cloud)
  */
 
-const winston = require("winston");
+import winston from "winston";
 
 /**
  * ===============================
@@ -26,24 +24,22 @@ const logFormat = winston.format.combine(
  * ===============================
  * Transports
  * ===============================
- * Console → dev + production
- * File → production debugging
  */
 const transports = [
   new winston.transports.Console({
-    level: process.env.NODE_ENV === "production" ? "info" : "debug"
-  })
+    level: process.env.NODE_ENV === "production" ? "info" : "debug",
+  }),
 ];
 
-// In production, store error logs to file
+// File logging only in production
 if (process.env.NODE_ENV === "production") {
   transports.push(
     new winston.transports.File({
       filename: "logs/error.log",
-      level: "error"
+      level: "error",
     }),
     new winston.transports.File({
-      filename: "logs/combined.log"
+      filename: "logs/combined.log",
     })
   );
 }
@@ -57,18 +53,18 @@ const logger = winston.createLogger({
   level: "info",
   format: logFormat,
   transports,
-  exitOnError: false
+  exitOnError: false,
 });
 
 /**
  * ===============================
- * Stream for Morgan (HTTP logs)
+ * Morgan Stream Support
  * ===============================
  */
 logger.stream = {
-  write: message => {
+  write: (message) => {
     logger.info(message.trim());
-  }
+  },
 };
 
-module.exports = logger;
+export default logger;   // ⭐ THIS FIXES THE ERROR

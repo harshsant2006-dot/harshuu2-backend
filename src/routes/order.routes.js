@@ -8,33 +8,49 @@ import Order from "../models/order.js";
 import Dish from "../models/dish.js";
 import Restaurant from "../models/restaurant.js";
 import Invoice from "../models/invoice.js";
-import PaymentSettings from "../models/paymentsettings.js";
 import CONSTANTS from "../config/constant.js";
 
 const router = express.Router();
 
+/* ================= CONSTANTS ================= */
+const { BILLING_DEFAULTS, ORDER_STATUS } = CONSTANTS;
+
+const {
+  PLATFORM_FEE,
+  HANDLING_CHARGE,
+  GST_PERCENT,
+  DELIVERY_PER_KM
+} = BILLING_DEFAULTS;
+
 /* ======================================================
-   CREATE ORDER + GENERATE BILL (CORE FLOW)
+   CREATE ORDER + GENERATE BILL
 ====================================================== */
 router.post("/", async (req, res) => {
   try {
-    const { restaurantId, items, customer } = req.body;
+    const { restaurantId, items, customer, distanceKm = 1 } = req.body;
 
-    if (!restaurantId || !items || !items.length || !customer) {
+    if (!restaurantId || !items?.length || !customer) {
       return res.status(400).json({
         success: false,
-        message: "restaurantId, items and customer details are required"
+        message: "restaurantId, items and customer are required"
       });
     }
 
+    /* -------- Restaurant check -------- */
     const restaurant = await Restaurant.findById(restaurantId);
-    if (!restaurant || !restaurant.isOpen) {
+
+    if (
+      !restaurant ||
+      restaurant.status !== "OPEN" ||
+      !restaurant.isActive
+    ) {
       return res.status(400).json({
         success: false,
-        message: "Restaurant is closed or not found"
+        message: "Restaurant is closed or inactive"
       });
     }
 
+    /* -------- Calculate food total -------- */
     let foodTotal = 0;
     const orderItems = [];
 
@@ -52,7 +68,7 @@ router.post("/", async (req, res) => {
       foodTotal += lineTotal;
 
       orderItems.push({
-        dishId: dish._id,
+        dish: dish._id,
         name: dish.name,
         price: dish.price,
         quantity: item.quantity,
@@ -60,45 +76,56 @@ router.post("/", async (req, res) => {
       });
     }
 
-    const platformFee = CONSTANTS.PLATFORM_FEE;
-    const handlingCharge = CONSTANTS.HANDLING_CHARGE;
-    const deliveryCharge = CONSTANTS.DELIVERY_FEE_PER_KM;
-    const gst = Number(((foodTotal * CONSTANTS.GST_PERCENT) / 100).toFixed(2));
+    /* -------- Billing -------- */
+    const gstAmount = Number(
+      ((foodTotal * GST_PERCENT) / 100).toFixed(2)
+    );
+
+    const deliveryCharge = Number(
+      (distanceKm * DELIVERY_PER_KM).toFixed(2)
+    );
 
     const grandTotal =
       foodTotal +
-      platformFee +
-      handlingCharge +
-      deliveryCharge +
-      gst;
+      gstAmount +
+      PLATFORM_FEE +
+      HANDLING_CHARGE +
+      deliveryCharge;
 
+    /* -------- Create Order -------- */
     const order = await Order.create({
-      restaurantId,
-      items: orderItems,
+      restaurant: restaurantId,
       customer,
-      foodTotal,
-      platformFee,
-      handlingCharge,
-      deliveryCharge,
-      gst,
-      grandTotal,
-      status: "PLACED"
+      items: orderItems,
+      distanceKm,
+      bill: {
+        foodTotal,
+        gstAmount,
+        platformFee: PLATFORM_FEE,
+        handlingCharge: HANDLING_CHARGE,
+        deliveryCharge,
+        grandTotal
+      },
+      status: ORDER_STATUS.CREATED
     });
 
+    /* -------- Create Invoice -------- */
     const invoice = await Invoice.create({
       orderId: order._id,
-      breakdown: {
-        foodTotal,
-        platformFee,
-        handlingCharge,
-        deliveryCharge,
-        gst
-      },
-      grandTotal
+      restaurantId,
+      customer,
+      items: orderItems,
+      foodTotal,
+      platformFee: PLATFORM_FEE,
+      handlingCharge: HANDLING_CHARGE,
+      deliveryCharge,
+      gstPercentage: GST_PERCENT,
+      gstAmount,
+      grandTotal,
+      paymentMethod: "COD",
+      paymentStatus: "PENDING",
+      invoiceNumber: `INV-${Date.now()}`
     });
-
-    order.invoiceId = invoice._id;
-    await order.save();
 
     res.status(201).json({
       success: true,
@@ -110,7 +137,10 @@ router.post("/", async (req, res) => {
     });
   } catch (error) {
     console.error("ORDER CREATE ERROR:", error);
-    res.status(500).json({ success: false, message: "Server error" });
+    res.status(500).json({
+      success: false,
+      message: "Server error"
+    });
   }
 });
 
@@ -120,8 +150,8 @@ router.post("/", async (req, res) => {
 router.get("/:id", async (req, res) => {
   try {
     const order = await Order.findById(req.params.id)
-      .populate("restaurantId", "name")
-      .populate("invoiceId");
+      .populate("restaurant", "name")
+      .populate("items.dish");
 
     if (!order) {
       return res.status(404).json({
@@ -144,16 +174,7 @@ router.patch("/:id/status", async (req, res) => {
   try {
     const { status } = req.body;
 
-    const allowed = [
-      "PLACED",
-      "ACCEPTED",
-      "PREPARING",
-      "OUT_FOR_DELIVERY",
-      "DELIVERED",
-      "CANCELLED"
-    ];
-
-    if (!allowed.includes(status)) {
+    if (!Object.values(ORDER_STATUS).includes(status)) {
       return res.status(400).json({
         success: false,
         message: "Invalid order status"
@@ -184,4 +205,4 @@ router.patch("/:id/status", async (req, res) => {
   }
 });
 
-export default router;   // ⭐ MOST IMPORTANT
+export default router;

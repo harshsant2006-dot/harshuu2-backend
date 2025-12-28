@@ -6,7 +6,9 @@
  */
 
 import mongoose from "mongoose";
-const { DISH_TYPE } = require("../config/constants");
+import CONSTANTS from "../config/constant.js";
+
+const { DISH_TYPE } = CONSTANTS;
 
 const dishSchema = new mongoose.Schema(
   {
@@ -79,17 +81,17 @@ const dishSchema = new mongoose.Schema(
 );
 
 /**
- * Compound index:
- * Fast lookup of menu items per restaurant
+ * Compound index
  */
 dishSchema.index({ restaurant: 1, isAvailable: 1 });
 
 /**
- * Safety check:
- * Dish must be available to order
+ * Instance method
  */
 dishSchema.methods.canBeOrdered = function () {
   return this.isAvailable === true;
 };
 
-module.exports = mongoose.model("Dish", dishSchema);
+const Dish = mongoose.model("Dish", dishSchema);
+
+export default Dish;   // ⭐ MOST IMPORTANT

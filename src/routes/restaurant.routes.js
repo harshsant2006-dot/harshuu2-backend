@@ -9,18 +9,14 @@
  */
 
 import express from "express";
-const router = express.Router();
+import Restaurant from "../models/restaurant.js";
+import Dish from "../models/dish.js";
 
-const Restaurant = require("../models/restaurant");
-const Dish = require("../models/dish");
+const router = express.Router();
 
 /* =====================================================
    CREATE RESTAURANT
 ===================================================== */
-/**
- * @route   POST /restaurant
- * @desc    Create a new restaurant
- */
 router.post("/", async (req, res) => {
   try {
     const { name, image, address, location } = req.body;
@@ -37,7 +33,7 @@ router.post("/", async (req, res) => {
       image,
       address,
       location,
-      isOpen: true
+      isActive: true
     });
 
     res.status(201).json({
@@ -54,10 +50,6 @@ router.post("/", async (req, res) => {
 /* =====================================================
    GET SINGLE RESTAURANT
 ===================================================== */
-/**
- * @route   GET /restaurant/:id
- * @desc    Get restaurant by ID
- */
 router.get("/:id", async (req, res) => {
   try {
     const restaurant = await Restaurant.findById(req.params.id);
@@ -82,17 +74,11 @@ router.get("/:id", async (req, res) => {
 /* =====================================================
    UPDATE RESTAURANT DETAILS
 ===================================================== */
-/**
- * @route   PATCH /restaurant/:id
- * @desc    Update restaurant details
- */
 router.patch("/:id", async (req, res) => {
   try {
-    const updates = req.body;
-
     const restaurant = await Restaurant.findByIdAndUpdate(
       req.params.id,
-      updates,
+      req.body,
       { new: true, runValidators: true }
     );
 
@@ -117,10 +103,6 @@ router.patch("/:id", async (req, res) => {
 /* =====================================================
    OPEN / CLOSE RESTAURANT
 ===================================================== */
-/**
- * @route   PATCH /restaurant/:id/status
- * @desc    Toggle restaurant open/close
- */
 router.patch("/:id/status", async (req, res) => {
   try {
     const restaurant = await Restaurant.findById(req.params.id);
@@ -132,12 +114,14 @@ router.patch("/:id/status", async (req, res) => {
       });
     }
 
-    restaurant.isOpen = !restaurant.isOpen;
+    restaurant.isActive = !restaurant.isActive;
     await restaurant.save();
 
     res.json({
       success: true,
-      message: `Restaurant is now ${restaurant.isOpen ? "OPEN" : "CLOSED"}`,
+      message: `Restaurant is now ${
+        restaurant.isActive ? "ACTIVE" : "INACTIVE"
+      }`,
       data: restaurant
     });
   } catch (error) {
@@ -149,10 +133,6 @@ router.patch("/:id/status", async (req, res) => {
 /* =====================================================
    DELETE RESTAURANT (CASCADE)
 ===================================================== */
-/**
- * @route   DELETE /restaurant/:id
- * @desc    Delete restaurant and its dishes
- */
 router.delete("/:id", async (req, res) => {
   try {
     const restaurant = await Restaurant.findById(req.params.id);
@@ -164,8 +144,8 @@ router.delete("/:id", async (req, res) => {
       });
     }
 
-    // Remove all dishes of this restaurant
-    await Dish.deleteMany({ restaurantId: restaurant._id });
+    // Remove all dishes under this restaurant
+    await Dish.deleteMany({ restaurant: restaurant._id });
 
     // Remove restaurant
     await restaurant.deleteOne();
@@ -180,4 +160,4 @@ router.delete("/:id", async (req, res) => {
   }
 });
 
-module.exports = router;
+export default router;   // ⭐ ONLY export, ONLY at end

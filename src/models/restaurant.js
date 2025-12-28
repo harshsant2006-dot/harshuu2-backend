@@ -6,7 +6,9 @@
  */
 
 import mongoose from "mongoose";
-const { RESTAURANT_STATUS } = require("../config/constants");
+import CONSTANTS from "../config/constant.js";
+
+const { RESTAURANT_STATUS } = CONSTANTS;
 
 const restaurantSchema = new mongoose.Schema(
   {
@@ -24,7 +26,7 @@ const restaurantSchema = new mongoose.Schema(
     },
 
     image: {
-      type: String, // Cloudinary / S3 URL
+      type: String,
       required: true
     },
 
@@ -36,7 +38,7 @@ const restaurantSchema = new mongoose.Schema(
     },
 
     cuisineTypes: {
-      type: [String], // e.g. ["Indian", "Chinese"]
+      type: [String],
       default: []
     },
 
@@ -95,7 +97,7 @@ const restaurantSchema = new mongoose.Schema(
 
     commissionPercent: {
       type: Number,
-      default: 15, // platform commission
+      default: 15,
       min: 0,
       max: 50
     },
@@ -124,4 +126,6 @@ restaurantSchema.methods.canAcceptOrder = function () {
   return this.status === RESTAURANT_STATUS.OPEN && this.isActive;
 };
 
-module.exports = mongoose.model("Restaurant", restaurantSchema);
+const Restaurant = mongoose.model("Restaurant", restaurantSchema);
+
+export default Restaurant;   // ⭐ MOST IMPORTANT

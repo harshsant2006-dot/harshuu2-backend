@@ -4,30 +4,21 @@
  */
 
 import express from "express";
+import Order from "../models/order.js";
+import Dish from "../models/dish.js";
+import Restaurant from "../models/restaurant.js";
+import Invoice from "../models/invoice.js";
+import PaymentSettings from "../models/paymentsettings.js";
+import CONSTANTS from "../config/constant.js";
+
 const router = express.Router();
-
-const Order = require("../models/order");
-const Dish = require("../models/dish");
-const Restaurant = require("../models/restaurant");
-const Invoice = require("../models/invoice");
-const PaymentSettings = require("../models/paymentsettings");
-
-const CONSTANTS = require("../config/constant");
 
 /* ======================================================
    CREATE ORDER + GENERATE BILL (CORE FLOW)
 ====================================================== */
-/**
- * @route   POST /order
- * @desc    Create order, calculate bill, generate invoice
- */
 router.post("/", async (req, res) => {
   try {
-    const {
-      restaurantId,
-      items, // [{ dishId, quantity }]
-      customer
-    } = req.body;
+    const { restaurantId, items, customer } = req.body;
 
     if (!restaurantId || !items || !items.length || !customer) {
       return res.status(400).json({
@@ -44,9 +35,6 @@ router.post("/", async (req, res) => {
       });
     }
 
-    /* -------------------------
-       FETCH DISHES & CALCULATE
-    -------------------------- */
     let foodTotal = 0;
     const orderItems = [];
 
@@ -72,12 +60,9 @@ router.post("/", async (req, res) => {
       });
     }
 
-    /* -------------------------
-       BILLING LOGIC (SERVER)
-    -------------------------- */
     const platformFee = CONSTANTS.PLATFORM_FEE;
     const handlingCharge = CONSTANTS.HANDLING_CHARGE;
-    const deliveryCharge = CONSTANTS.DELIVERY_FEE_PER_KM; // flat or km-based
+    const deliveryCharge = CONSTANTS.DELIVERY_FEE_PER_KM;
     const gst = Number(((foodTotal * CONSTANTS.GST_PERCENT) / 100).toFixed(2));
 
     const grandTotal =
@@ -87,9 +72,6 @@ router.post("/", async (req, res) => {
       deliveryCharge +
       gst;
 
-    /* -------------------------
-       CREATE ORDER
-    -------------------------- */
     const order = await Order.create({
       restaurantId,
       items: orderItems,
@@ -103,9 +85,6 @@ router.post("/", async (req, res) => {
       status: "PLACED"
     });
 
-    /* -------------------------
-       CREATE INVOICE
-    -------------------------- */
     const invoice = await Invoice.create({
       orderId: order._id,
       breakdown: {
@@ -136,11 +115,8 @@ router.post("/", async (req, res) => {
 });
 
 /* ======================================================
-   GET ORDER DETAILS (FOR ADMIN / TRACKING)
+   GET ORDER DETAILS
 ====================================================== */
-/**
- * @route   GET /order/:id
- */
 router.get("/:id", async (req, res) => {
   try {
     const order = await Order.findById(req.params.id)
@@ -162,11 +138,8 @@ router.get("/:id", async (req, res) => {
 });
 
 /* ======================================================
-   UPDATE ORDER STATUS (ADMIN / RESTAURANT)
+   UPDATE ORDER STATUS
 ====================================================== */
-/**
- * @route   PATCH /order/:id/status
- */
 router.patch("/:id/status", async (req, res) => {
   try {
     const { status } = req.body;
@@ -211,4 +184,4 @@ router.patch("/:id/status", async (req, res) => {
   }
 });
 
-module.exports = router;
+export default router;   // ⭐ MOST IMPORTANT

@@ -12,7 +12,7 @@
  */
 
 /* eslint-disable no-unused-vars */
-module.exports = (err, req, res, next) => {
+const errorHandler = (err, req, res, next) => {
   console.error("❌ ERROR:", err);
 
   let statusCode = err.statusCode || 500;
@@ -69,3 +69,5 @@ module.exports = (err, req, res, next) => {
     })
   });
 };
+
+export default errorHandler;   // ⭐ THIS FIXES THE ERROR

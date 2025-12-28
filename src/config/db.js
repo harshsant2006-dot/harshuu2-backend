@@ -1,46 +1,48 @@
 /**
  * HARSHUU 2.0
  * MongoDB Connection (Production Ready)
- * -------------------------------------
- * - Uses Mongoose
- * - Uses Environment Variables
- * - Handles connection errors safely
- * - Suitable for real production usage
+ * ES Module Compatible
  */
 
-const mongoose = require("mongoose");
+import mongoose from "mongoose";
+
+// Optional but recommended for production
+mongoose.set("strictQuery", true);
 
 const connectDB = async () => {
   try {
-    if (!process.env.MONGODB_URI) {
-      throw new Error("❌ MONGODB_URI is not defined in environment variables");
+    const mongoURI = process.env.MONGODB_URI;
+
+    if (!mongoURI) {
+      throw new Error("MONGODB_URI is not defined in environment variables");
     }
 
-    const conn = await mongoose.connect(process.env.MONGODB_URI, {
-      autoIndex: false,              // better for production
-      serverSelectionTimeoutMS: 5000 // fail fast if DB unreachable
+    const conn = await mongoose.connect(mongoURI, {
+      autoIndex: false,
+      serverSelectionTimeoutMS: 5000,
     });
 
     console.log(
       `✅ MongoDB Connected: ${conn.connection.host}/${conn.connection.name}`
     );
   } catch (error) {
-    console.error("❌ MongoDB connection failed");
-    console.error(error.message);
+    console.error("❌ MongoDB connection failed:", error.message);
+    process.exit(1); // app should not run without DB
+  }
+};
 
-    // Exit process — app should NOT run without DB
+// Graceful shutdown (Render / Linux safe)
+const gracefulShutdown = async () => {
+  try {
+    await mongoose.connection.close();
+    console.log("🔌 MongoDB connection closed gracefully");
+    process.exit(0);
+  } catch (err) {
     process.exit(1);
   }
 };
 
-/**
- * Graceful shutdown
- * Closes DB connection when server stops
- */
-process.on("SIGINT", async () => {
-  await mongoose.connection.close();
-  console.log("🔌 MongoDB connection closed (App terminated)");
-  process.exit(0);
-});
+process.on("SIGINT", gracefulShutdown);
+process.on("SIGTERM", gracefulShutdown);
 
-module.exports = connectDB;
+export default connectDB;

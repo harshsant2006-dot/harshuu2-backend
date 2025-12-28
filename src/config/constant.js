@@ -6,6 +6,17 @@
  * NO business logic here – only safe defaults & enums.
  */
 
+/**
+ * Dish Types
+ */
+const DISH_TYPE = Object.freeze({
+  VEG: "VEG",
+  NON_VEG: "NON_VEG"
+});
+
+/**
+ * Order Status
+ */
 const ORDER_STATUS = Object.freeze({
   CREATED: "CREATED",
   PAID: "PAID",
@@ -16,12 +27,18 @@ const ORDER_STATUS = Object.freeze({
   CANCELLED: "CANCELLED"
 });
 
+/**
+ * User Roles
+ */
 const USER_ROLES = Object.freeze({
   ADMIN: "ADMIN",
   CUSTOMER: "CUSTOMER",
   DELIVERY: "DELIVERY"
 });
 
+/**
+ * Restaurant Status
+ */
 const RESTAURANT_STATUS = Object.freeze({
   OPEN: "OPEN",
   CLOSED: "CLOSED"
@@ -67,7 +84,7 @@ const REGEX = Object.freeze({
  * ✅ DEFAULT EXPORT (ES MODULE)
  */
 const CONSTANTS = {
-  DISH_TYPE, 
+  DISH_TYPE,
   ORDER_STATUS,
   USER_ROLES,
   RESTAURANT_STATUS,

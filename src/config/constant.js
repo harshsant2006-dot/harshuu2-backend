@@ -67,6 +67,7 @@ const REGEX = Object.freeze({
  * ✅ DEFAULT EXPORT (ES MODULE)
  */
 const CONSTANTS = {
+  DISH_TYPE, 
   ORDER_STATUS,
   USER_ROLES,
   RESTAURANT_STATUS,

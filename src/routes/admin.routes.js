@@ -9,7 +9,13 @@
  */
 
 import express from "express";
+
 const router = express.Router();
+
+router.post("/login", adminLogin);
+router.get("/me", adminProfile);
+
+export default router;   // ⭐ MUST
 
 const Restaurant = require("../models/restaurant");
 const Dish = require("../models/dish");

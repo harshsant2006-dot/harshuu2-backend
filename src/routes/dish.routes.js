@@ -10,7 +10,23 @@
  */
 
 import express from "express";
+
 const router = express.Router();
+
+/**
+ * DISH ROUTES
+ */
+
+// example routes (tuza actual controller thevu shakto)
+router.get("/", (req, res) => {
+  res.json({ success: true, message: "Dish routes working" });
+});
+
+router.post("/", (req, res) => {
+  res.json({ success: true, message: "Dish created" });
+});
+
+export default router;   // ⭐ THIS FIXES THE ERROR
 
 const Dish = require("../models/dish");
 const Restaurant = require("../models/restaurant");

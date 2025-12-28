@@ -9,26 +9,26 @@
  */
 
 import express from "express";
+import Restaurant from "../models/restaurant.js";
+import Dish from "../models/dish.js";
+import PaymentSettings from "../models/paymentsettings.js";
 
 const router = express.Router();
 
-router.post("/login", adminLogin);
-router.get("/me", adminProfile);
+/* =====================================================
+   AUTH (TEMP BASIC – controller नंतर वेगळं कर)
+===================================================== */
+router.post("/login", async (req, res) => {
+  res.json({ success: true, message: "Admin login placeholder" });
+});
 
-export default router;   // ⭐ MUST
-
-const Restaurant = require("../models/restaurant");
-const Dish = require("../models/dish");
-const PaymentSettings = require("../models/paymentsettings");
+router.get("/me", async (req, res) => {
+  res.json({ success: true, admin: { role: "ADMIN" } });
+});
 
 /* =====================================================
    RESTAURANTS
 ===================================================== */
-
-/**
- * @route   POST /admin/restaurant
- * @desc    Add new restaurant
- */
 router.post("/restaurant", async (req, res) => {
   try {
     const { name, image } = req.body;
@@ -40,10 +40,7 @@ router.post("/restaurant", async (req, res) => {
       });
     }
 
-    const restaurant = await Restaurant.create({
-      name,
-      image
-    });
+    const restaurant = await Restaurant.create({ name, image });
 
     res.status(201).json({
       success: true,
@@ -56,10 +53,6 @@ router.post("/restaurant", async (req, res) => {
   }
 });
 
-/**
- * @route   PATCH /admin/restaurant/:id/status
- * @desc    Open / Close restaurant
- */
 router.patch("/restaurant/:id/status", async (req, res) => {
   try {
     const restaurant = await Restaurant.findById(req.params.id);
@@ -71,15 +64,15 @@ router.patch("/restaurant/:id/status", async (req, res) => {
       });
     }
 
-    restaurant.isOpen = !restaurant.isOpen;
+    restaurant.isActive = !restaurant.isActive;
     await restaurant.save();
 
     res.json({
       success: true,
       message: `Restaurant ${
-        restaurant.isOpen ? "OPENED" : "CLOSED"
-      } successfully`,
-      isOpen: restaurant.isOpen
+        restaurant.isActive ? "ACTIVATED" : "DEACTIVATED"
+      }`,
+      isActive: restaurant.isActive
     });
   } catch (error) {
     console.error("TOGGLE RESTAURANT ERROR:", error);
@@ -87,10 +80,6 @@ router.patch("/restaurant/:id/status", async (req, res) => {
   }
 });
 
-/**
- * @route   DELETE /admin/restaurant/:id
- * @desc    Remove restaurant
- */
 router.delete("/restaurant/:id", async (req, res) => {
   try {
     const restaurant = await Restaurant.findById(req.params.id);
@@ -102,14 +91,12 @@ router.delete("/restaurant/:id", async (req, res) => {
       });
     }
 
-    // Remove all dishes under this restaurant
-    await Dish.deleteMany({ restaurantId: restaurant._id });
-
+    await Dish.deleteMany({ restaurant: restaurant._id });
     await restaurant.deleteOne();
 
     res.json({
       success: true,
-      message: "Restaurant and its dishes removed successfully"
+      message: "Restaurant and dishes removed"
     });
   } catch (error) {
     console.error("REMOVE RESTAURANT ERROR:", error);
@@ -120,11 +107,6 @@ router.delete("/restaurant/:id", async (req, res) => {
 /* =====================================================
    DISHES
 ===================================================== */
-
-/**
- * @route   POST /admin/dish
- * @desc    Add dish under restaurant
- */
 router.post("/dish", async (req, res) => {
   try {
     const { restaurantId, name, price, type, image } = req.body;
@@ -136,16 +118,8 @@ router.post("/dish", async (req, res) => {
       });
     }
 
-    const restaurant = await Restaurant.findById(restaurantId);
-    if (!restaurant) {
-      return res.status(404).json({
-        success: false,
-        message: "Restaurant not found"
-      });
-    }
-
     const dish = await Dish.create({
-      restaurantId,
+      restaurant: restaurantId,
       name,
       price,
       type,
@@ -163,10 +137,6 @@ router.post("/dish", async (req, res) => {
   }
 });
 
-/**
- * @route   PATCH /admin/dish/:id/price
- * @desc    Update dish price
- */
 router.patch("/dish/:id/price", async (req, res) => {
   try {
     const { price } = req.body;
@@ -174,7 +144,7 @@ router.patch("/dish/:id/price", async (req, res) => {
     if (!price || price <= 0) {
       return res.status(400).json({
         success: false,
-        message: "Valid price is required"
+        message: "Valid price required"
       });
     }
 
@@ -200,14 +170,9 @@ router.patch("/dish/:id/price", async (req, res) => {
   }
 });
 
-/**
- * @route   DELETE /admin/dish/:id
- * @desc    Remove dish
- */
 router.delete("/dish/:id", async (req, res) => {
   try {
     const dish = await Dish.findById(req.params.id);
-
     if (!dish) {
       return res.status(404).json({
         success: false,
@@ -230,48 +195,41 @@ router.delete("/dish/:id", async (req, res) => {
 /* =====================================================
    PAYMENT / QR SETTINGS
 ===================================================== */
-
-/**
- * @route   POST /admin/settings/qr
- * @desc    Upload / update QR & charges
- */
 router.post("/settings/qr", async (req, res) => {
   try {
     const {
-      qrImage,
+      upiQrImage,
       platformFee,
       handlingCharge,
-      deliveryChargePerKm,
+      deliveryFeePerKm,
       gstPercentage
     } = req.body;
 
-    if (!qrImage) {
+    if (!upiQrImage) {
       return res.status(400).json({
         success: false,
-        message: "QR image is required"
+        message: "QR image required"
       });
     }
 
-    let settings = await PaymentSettings.findOne();
+    let settings = await PaymentSettings.findOne({ isActive: true });
 
     if (!settings) {
       settings = await PaymentSettings.create({
-        qrImage,
+        upiQrImage,
         platformFee,
         handlingCharge,
-        deliveryChargePerKm,
+        deliveryFeePerKm,
         gstPercentage
       });
     } else {
-      settings.qrImage = qrImage;
-      if (platformFee !== undefined) settings.platformFee = platformFee;
-      if (handlingCharge !== undefined)
-        settings.handlingCharge = handlingCharge;
-      if (deliveryChargePerKm !== undefined)
-        settings.deliveryChargePerKm = deliveryChargePerKm;
-      if (gstPercentage !== undefined)
-        settings.gstPercentage = gstPercentage;
-
+      Object.assign(settings, {
+        upiQrImage,
+        platformFee,
+        handlingCharge,
+        deliveryFeePerKm,
+        gstPercentage
+      });
       await settings.save();
     }
 
@@ -286,4 +244,4 @@ router.post("/settings/qr", async (req, res) => {
   }
 });
 
-module.exports = router;
+export default router;   // ⭐ ONLY export, ONLY at end

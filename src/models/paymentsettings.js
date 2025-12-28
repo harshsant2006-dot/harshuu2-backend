@@ -2,15 +2,7 @@
  * HARSHUU 2.0
  * Payment & Platform Settings Model
  * ----------------------------------
- * Stores:
- * - UPI QR Image
- * - Platform Fee
- * - Handling Charge
- * - Delivery Fee per KM
- * - GST Percentage
- *
  * SINGLE DOCUMENT COLLECTION
- * (Only one active settings document in DB)
  */
 
 import mongoose from "mongoose";
@@ -21,7 +13,7 @@ const paymentSettingsSchema = new mongoose.Schema(
        PAYMENT
     ========================= */
     upiQrImage: {
-      type: String, // Cloudinary / S3 / Base64 URL
+      type: String,
       required: true
     },
 
@@ -78,14 +70,16 @@ const paymentSettingsSchema = new mongoose.Schema(
 );
 
 /* =========================
-   ENSURE SINGLE DOCUMENT
+   ENSURE SINGLE ACTIVE DOCUMENT
 ========================= */
 paymentSettingsSchema.index(
   { isActive: 1 },
   { unique: true, partialFilterExpression: { isActive: true } }
 );
 
-module.exports = mongoose.model(
+const PaymentSettings = mongoose.model(
   "PaymentSettings",
   paymentSettingsSchema
 );
+
+export default PaymentSettings;   // ⭐ MOST IMPORTANT

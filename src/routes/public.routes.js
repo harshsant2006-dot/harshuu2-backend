@@ -9,29 +9,29 @@
  */
 
 import express from "express";
+import Restaurant from "../models/restaurant.js";
+import Dish from "../models/dish.js";
+import Order from "../models/order.js";
+import Invoice from "../models/invoice.js";
+import PaymentSettings from "../models/paymentsettings.js";
+import CONSTANTS from "../config/constant.js";
+
 const router = express.Router();
 
-const Restaurant = require("../models/restaurant");
-const Dish = require("../models/dish");
-const Order = require("../models/order");
-const Invoice = require("../models/invoice");
-const PaymentSettings = require("../models/paymentsettings");
+const {
+  BILLING_DEFAULTS
+} = CONSTANTS;
 
 const {
-  GST_PERCENTAGE,
-  DEFAULT_PLATFORM_FEE,
-  DEFAULT_HANDLING_CHARGE,
-  DELIVERY_FEE_PER_KM
-} = require("../config/constants");
+  GST_PERCENT,
+  PLATFORM_FEE,
+  HANDLING_CHARGE,
+  DELIVERY_PER_KM
+} = BILLING_DEFAULTS;
 
 /* =====================================================
    GET ALL RESTAURANTS (CUSTOMER)
 ===================================================== */
-
-/**
- * @route   GET /restaurants
- * @desc    Get all restaurants (open + closed)
- */
 router.get("/restaurants", async (req, res) => {
   try {
     const restaurants = await Restaurant.find()
@@ -50,11 +50,6 @@ router.get("/restaurants", async (req, res) => {
 /* =====================================================
    GET MENU BY RESTAURANT
 ===================================================== */
-
-/**
- * @route   GET /menu/:restaurantId
- * @desc    Get restaurant menu
- */
 router.get("/menu/:restaurantId", async (req, res) => {
   try {
     const restaurant = await Restaurant.findById(req.params.restaurantId);
@@ -67,7 +62,7 @@ router.get("/menu/:restaurantId", async (req, res) => {
     }
 
     const dishes = await Dish.find({
-      restaurantId: restaurant._id,
+      restaurant: restaurant._id,
       isAvailable: true
     });
 
@@ -85,14 +80,9 @@ router.get("/menu/:restaurantId", async (req, res) => {
 /* =====================================================
    GET PAYMENT / QR SETTINGS
 ===================================================== */
-
-/**
- * @route   GET /settings/qr
- * @desc    Get QR + charges for order page
- */
 router.get("/settings/qr", async (req, res) => {
   try {
-    const settings = await PaymentSettings.findOne();
+    const settings = await PaymentSettings.findOne({ isActive: true });
 
     if (!settings) {
       return res.status(404).json({
@@ -112,20 +102,11 @@ router.get("/settings/qr", async (req, res) => {
 });
 
 /* =====================================================
-   CREATE ORDER + BILLING (CORE LOGIC)
+   CREATE ORDER + BILLING
 ===================================================== */
-
-/**
- * @route   POST /order
- * @desc    Place order & generate invoice
- */
 router.post("/order", async (req, res) => {
   try {
-    const {
-      restaurantId,
-      items, // [{ dishId, quantity }]
-      customer
-    } = req.body;
+    const { restaurantId, items, customer } = req.body;
 
     if (!restaurantId || !items || items.length === 0) {
       return res.status(400).json({
@@ -135,16 +116,13 @@ router.post("/order", async (req, res) => {
     }
 
     const restaurant = await Restaurant.findById(restaurantId);
-    if (!restaurant || !restaurant.isOpen) {
+    if (!restaurant || !restaurant.isActive) {
       return res.status(400).json({
         success: false,
         message: "Restaurant is not accepting orders"
       });
     }
 
-    /* -------------------------------
-       CALCULATE FOOD TOTAL
-    -------------------------------- */
     let foodTotal = 0;
     const orderItems = [];
 
@@ -156,7 +134,7 @@ router.post("/order", async (req, res) => {
       foodTotal += itemTotal;
 
       orderItems.push({
-        dishId: dish._id,
+        dish: dish._id,
         name: dish.name,
         price: dish.price,
         quantity: item.quantity,
@@ -171,24 +149,16 @@ router.post("/order", async (req, res) => {
       });
     }
 
-    /* -------------------------------
-       FETCH CHARGES
-    -------------------------------- */
-    const settings = await PaymentSettings.findOne();
+    const settings = await PaymentSettings.findOne({ isActive: true });
 
-    const platformFee =
-      settings?.platformFee ?? DEFAULT_PLATFORM_FEE;
-
-    const handlingCharge =
-      settings?.handlingCharge ?? DEFAULT_HANDLING_CHARGE;
-
+    const platformFee = settings?.platformFee ?? PLATFORM_FEE;
+    const handlingCharge = settings?.handlingCharge ?? HANDLING_CHARGE;
     const deliveryCharge =
-      settings?.deliveryChargePerKm
-        ? settings.deliveryChargePerKm * (customer.distanceKm || 1)
-        : DELIVERY_FEE_PER_KM;
+      (settings?.deliveryFeePerKm ?? DELIVERY_PER_KM) *
+      (customer?.distanceKm || 1);
 
     const gstAmount =
-      (foodTotal * (settings?.gstPercentage ?? GST_PERCENTAGE)) / 100;
+      (foodTotal * (settings?.gstPercentage ?? GST_PERCENT)) / 100;
 
     const grandTotal =
       foodTotal +
@@ -197,28 +167,39 @@ router.post("/order", async (req, res) => {
       deliveryCharge +
       gstAmount;
 
-    /* -------------------------------
-       CREATE ORDER
-    -------------------------------- */
     const order = await Order.create({
-      restaurantId,
+      restaurant: restaurantId,
       items: orderItems,
       customer,
-      foodTotal,
-      status: "PLACED"
+      bill: {
+        foodTotal,
+        gstAmount,
+        platformFee,
+        handlingCharge,
+        deliveryCharge,
+        grandTotal
+      },
+      payment: {
+        method: "COD",
+        status: "PENDING"
+      }
     });
 
-    /* -------------------------------
-       CREATE INVOICE
-    -------------------------------- */
     const invoice = await Invoice.create({
       orderId: order._id,
+      restaurantId,
+      customer,
+      items: orderItems,
       foodTotal,
       platformFee,
       handlingCharge,
       deliveryCharge,
+      gstPercentage: settings?.gstPercentage ?? GST_PERCENT,
       gstAmount,
-      grandTotal
+      grandTotal,
+      paymentMethod: "COD",
+      paymentStatus: "PENDING",
+      invoiceNumber: `INV-${Date.now()}`
     });
 
     res.status(201).json({
@@ -233,4 +214,4 @@ router.post("/order", async (req, res) => {
   }
 });
 
-module.exports = router;
+export default router;   // ⭐ MOST IMPORTANT

@@ -5,53 +5,31 @@
  * Handles:
  * - Add dish to restaurant
  * - Update dish price
- * - Remove dish
+ * - Toggle availability
+ * - Delete dish
  * - Fetch dishes by restaurant
  */
 
 import express from "express";
+import Dish from "../models/dish.js";
+import Restaurant from "../models/restaurant.js";
 
 const router = express.Router();
 
-/**
- * DISH ROUTES
- */
-
-// example routes (tuza actual controller thevu shakto)
-router.get("/", (req, res) => {
-  res.json({ success: true, message: "Dish routes working" });
-});
-
-router.post("/", (req, res) => {
-  res.json({ success: true, message: "Dish created" });
-});
-
-export default router;   // ⭐ THIS FIXES THE ERROR
-
-const Dish = require("../models/dish");
-const Restaurant = require("../models/restaurant");
-
 /* =====================================================
-   ADD DISH TO RESTAURANT
+   ADD DISH TO RESTAURANT (ADMIN)
 ===================================================== */
 /**
- * @route   POST /dish
- * @desc    Add a dish under a restaurant
+ * @route   POST /dishes
  */
 router.post("/", async (req, res) => {
   try {
-    const {
-      restaurantId,
-      name,
-      price,
-      isVeg,
-      image
-    } = req.body;
+    const { restaurantId, name, price, type, image } = req.body;
 
-    if (!restaurantId || !name || !price || !image) {
+    if (!restaurantId || !name || !price || !type || !image) {
       return res.status(400).json({
         success: false,
-        message: "restaurantId, name, price and image are required"
+        message: "restaurantId, name, price, type and image are required"
       });
     }
 
@@ -64,10 +42,10 @@ router.post("/", async (req, res) => {
     }
 
     const dish = await Dish.create({
-      restaurantId,
+      restaurant: restaurantId,
       name,
       price,
-      isVeg,
+      type,
       image,
       isAvailable: true
     });
@@ -87,15 +65,12 @@ router.post("/", async (req, res) => {
    GET DISHES BY RESTAURANT (PUBLIC)
 ===================================================== */
 /**
- * @route   GET /dish/restaurant/:restaurantId
- * @desc    Get all available dishes for a restaurant
+ * @route   GET /dishes/restaurant/:restaurantId
  */
 router.get("/restaurant/:restaurantId", async (req, res) => {
   try {
-    const { restaurantId } = req.params;
-
     const dishes = await Dish.find({
-      restaurantId,
+      restaurant: req.params.restaurantId,
       isAvailable: true
     }).sort({ createdAt: 1 });
 
@@ -111,11 +86,10 @@ router.get("/restaurant/:restaurantId", async (req, res) => {
 });
 
 /* =====================================================
-   UPDATE DISH PRICE
+   UPDATE DISH PRICE (ADMIN)
 ===================================================== */
 /**
- * @route   PATCH /dish/:id/price
- * @desc    Update dish price
+ * @route   PATCH /dishes/:id/price
  */
 router.patch("/:id/price", async (req, res) => {
   try {
@@ -153,11 +127,10 @@ router.patch("/:id/price", async (req, res) => {
 });
 
 /* =====================================================
-   TOGGLE DISH AVAILABILITY
+   TOGGLE DISH AVAILABILITY (ADMIN)
 ===================================================== */
 /**
- * @route   PATCH /dish/:id/status
- * @desc    Enable / Disable dish
+ * @route   PATCH /dishes/:id/status
  */
 router.patch("/:id/status", async (req, res) => {
   try {
@@ -175,7 +148,9 @@ router.patch("/:id/status", async (req, res) => {
 
     res.json({
       success: true,
-      message: `Dish is now ${dish.isAvailable ? "AVAILABLE" : "UNAVAILABLE"}`,
+      message: `Dish is now ${
+        dish.isAvailable ? "AVAILABLE" : "UNAVAILABLE"
+      }`,
       data: dish
     });
   } catch (error) {
@@ -185,11 +160,10 @@ router.patch("/:id/status", async (req, res) => {
 });
 
 /* =====================================================
-   DELETE DISH
+   DELETE DISH (ADMIN)
 ===================================================== */
 /**
- * @route   DELETE /dish/:id
- * @desc    Remove dish permanently
+ * @route   DELETE /dishes/:id
  */
 router.delete("/:id", async (req, res) => {
   try {
@@ -214,4 +188,4 @@ router.delete("/:id", async (req, res) => {
   }
 });
 
-module.exports = router;
+export default router;   // ⭐ ONLY export, ONLY at end

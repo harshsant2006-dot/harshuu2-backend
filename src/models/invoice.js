@@ -4,10 +4,6 @@
  * ----------------------------------
  * Generated AFTER order confirmation
  * Immutable billing record
- * Used for:
- * - Customer invoice
- * - Admin accounting
- * - GST reporting
  */
 
 import mongoose from "mongoose";
@@ -51,7 +47,6 @@ const invoiceSchema = new mongoose.Schema(
 
     /* =========================
        ITEMS SNAPSHOT
-       (Price frozen at order time)
     ========================= */
     items: [
       {
@@ -70,11 +65,11 @@ const invoiceSchema = new mongoose.Schema(
           min: 1
         },
         price: {
-          type: Number, // price per unit
+          type: Number,
           required: true
         },
         total: {
-          type: Number, // quantity * price
+          type: Number,
           required: true
         }
       }
@@ -161,4 +156,6 @@ const invoiceSchema = new mongoose.Schema(
   }
 );
 
-module.exports = mongoose.model("Invoice", invoiceSchema);
+const Invoice = mongoose.model("Invoice", invoiceSchema);
+
+export default Invoice;   // ⭐ MOST IMPORTANT

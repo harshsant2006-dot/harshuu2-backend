@@ -29,22 +29,21 @@ const RESTAURANT_STATUS = Object.freeze({
 
 /**
  * Billing Defaults
- * (Actual values can be overridden via ENV / Admin Settings)
  */
 const BILLING_DEFAULTS = Object.freeze({
-  PLATFORM_FEE: 5,           // ₹ flat (default)
-  HANDLING_CHARGE: 3,        // ₹ flat (default)
-  GST_PERCENT: 5,            // 5% GST on FOOD TOTAL only
-  DELIVERY_PER_KM: 10        // ₹10 per km
+  PLATFORM_FEE: 5,     // ₹ flat
+  HANDLING_CHARGE: 3,  // ₹ flat
+  GST_PERCENT: 5,      // %
+  DELIVERY_PER_KM: 10  // ₹ per km
 });
 
 /**
- * Distance & delivery rules
+ * Delivery rules
  */
 const DELIVERY_RULES = Object.freeze({
   MIN_DISTANCE_KM: 1,
   MAX_DISTANCE_KM: 15,
-  BASE_DELIVERY_KM: 3         // First 3 km can be free / flat logic
+  BASE_DELIVERY_KM: 3
 });
 
 /**
@@ -57,14 +56,17 @@ const LIMITS = Object.freeze({
 });
 
 /**
- * Regex / Validation helpers
+ * Regex helpers
  */
 const REGEX = Object.freeze({
   MOBILE: /^[6-9]\d{9}$/,
   OBJECT_ID: /^[0-9a-fA-F]{24}$/
 });
 
-module.exports = {
+/**
+ * ✅ DEFAULT EXPORT (ES MODULE)
+ */
+const CONSTANTS = {
   ORDER_STATUS,
   USER_ROLES,
   RESTAURANT_STATUS,
@@ -73,3 +75,5 @@ module.exports = {
   LIMITS,
   REGEX
 };
+
+export default CONSTANTS;
